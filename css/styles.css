@@ -1,0 +1,26 @@
+@charset "UTF-8";
+.navbar-brand {
+    padding: 0px;
+}
+
+.navbar-brand>img {
+    height: 100%;
+    padding: 5px;
+    width: auto;
+}
+
+.logotext {
+    height: 100%;
+    padding: 15px;
+    width: auto;
+}
+#slick img {
+	height: 150px;
+	padding: 10px;
+}
+.slick-center img {
+	transform: scale(1.33);
+}
+#chosen{
+	width: 40%;
+}

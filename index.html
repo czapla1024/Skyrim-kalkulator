@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="img/favicon.ico">
+
+<title>Skyrim Equip Filler</title>
+
+<!-- Bootstrap core CSS -->
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/styles.css" rel="stylesheet">
+<link href="css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+<link href="css/navbar-fixed-top.css" rel="stylesheet">
+<script src="js/ie-emulation-modes-warning.js"></script>
+
+<!-- jQuery  -->
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="http://code.jquery.com/color/jquery.color-2.1.2.min.js"></script>
+<script src="js/jquery.easing.1.3.min.js"></script>
+<script src="js/jquery.easing.compatibility.js"></script>
+<link rel="stylesheet" type="text/css" href="chosen/chosen.css"/>
+<style>
+@font-face{
+font-family: Futura;
+src: url("Futura T Condensed Medium.ttf");
+}
+body {
+background-image: url("img/bg.jpg");
+background-attachment: fixed;
+background-size: cover;
+background-position: center;
+}
+h1{
+font-family: Futura;
+margin-top: 0;
+}
+input[type=number], input[type=text]{
+font-family: Futura;
+font-size: 20pt;
+background-color: rgba(255,255,255,.5);
+color: black;
+}
+.jumbotron {
+background-color: rgba(128,128,128,.5);
+}
+.jumbotron h1, #labels {
+text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+color: white;
+}
+input[id^=name]{
+width: 30%;
+}
+input[type=submit]{
+font-size: 36px;
+background-color: rgba(128,128,128,.5);
+text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+color: white;
+}
+#labels:not(h1){
+font-size: 26px;
+font-family: Futura;
+};
+</style>
+</head>
+
+<body>
+		<section id="projekt">
+		<form id="form">
+		<div class="container">
+		<div class="jumbotron">
+				<h1>Equip load</h1>
+				<input type="number" name="weight" id="weight" placeholder="Your free equip weight" min="0" step="0.1" required/>
+				
+			</div>
+			<div class="jumbotron">
+			
+				<h1>Common item list</h1>
+				
+				<select id="item-0" name="item-0" data-placeholder="Type item's name" class="chosen" style="visibility: hidden"></select>
+			
+				<input type="button" id="delCommon" value="-"  style="visibility: hidden"/><input type="button" id="newCommon" value="+" style="visibility: hidden"/>
+				
+			</div>
+			<div class="jumbotron">
+				<h1>Custom items</h1>
+				<p id="customItem-0"><input type="text" id="name-0" name="name-0" placeholder="Item's name" required/>
+				<input type="number" id="value-0" name="value-0" placeholder="Item's value" min="0" required/>
+				<input type="number" id="weight-0" name="weight-0" placeholder="Item's weight" min="0" step="0.1" required/>
+				</p><input type="button" id="delCustom" value="-"/><input type="button" id="newCustom" value="+"/>
+				
+			</div>
+			<input type="submit" id="start" value="Search"/>
+			
+			<div class="jumbotron" style="margin-top: 125px" id="labels">
+				<h1>Advanced values</h1>
+				Iterations<input type="number" id="maxIter" name="maxIter" placeholder="Iterations" min="0" value="150000" required/><br />
+				Harmony Memory Size<input type="number" id="hms" name="hms" placeholder="HMS" min="1" value="10" required/><br />
+				Harmony Memory length<input type="number" id="HMLength" name="HMLength" placeholder="HM length" min="0" value="10" required/><br />
+				Harmony Memory Considering Rate<input type="number" id="hmcr" name="hmcr" placeholder="HMCR" min="0" max="1" value="0.5" step="0.001" required/><br >
+				Tries before Pitch Adjustment<input type="number" id="maxTries" name="maxTries" placeholder="Tries before PA" min="0" value="10" required/><br />
+			</div>	
+			</div>
+			</form>
+	</section>
+	<!-- Bootstrap core JavaScript
+    ================================================== -->
+
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/ie10-viewport-bug-workaround.js"></script>
+	<script src="js/forms.js"></script>
+	
+	<script type="text/javascript" src="chosen/chosen.jquery.js"></script>
+	<script>
+	$(document).ready(function(){
+	$.getJSON('items.json', function(data){
+		database = data;
+		commonList = $("<option />");
+		group = [];
+		group["bow"] = $("<optgroup>").attr("label", "Bows");
+		group["chestplate"] = $("<optgroup>").attr("label", "Chestplates");
+		group["gem"] = $("<optgroup>").attr("label", "Gems");
+		group["ingot"] = $("<optgroup>").attr("label", "Ingots");
+		group["necklace"] = $("<optgroup>").attr("label", "Necklaces");
+		group["ring"] = $("<optgroup>").attr("label", "Rings");
+		group["sword"] = $("<optgroup>").attr("label", "Swords");
+		for(i=0; i<database.length; i++)
+			($("<option />").val(i).text(database[i].name)).appendTo(group[database[i].type]);
+		for(var key in group)
+			commonList = commonList.add(group[key]);
+		
+		$('#item-0').append(commonList);
+		$('.chosen').chosen({
+			no_results_text: "Item not found",
+			allow_single_deselect: true
+		});
+		$('#newCommon').attr("style", "");
+		$('#delCommon').attr("style", "");
+	});
+	var commonCount = 1;
+	var customCount = 1;
+	$('#newCommon').click(function(){
+		$('#delCommon').before(" <select id=\"item-"+commonCount+"\" name=\"item-"+commonCount+"\" data-placeholder=\"Type item's name\" class=\"chosen\">");
+		$('#item-'+commonCount).append(commonList.clone());
+		$('#item-'+commonCount).chosen({
+			no_results_text: "Item not found",
+			allow_single_deselect: true
+		});
+		commonCount++;
+	});
+	$('#delCommon').click(function(){
+		if(commonCount>0)
+		commonCount--;
+		$('#item-'+commonCount).remove();
+		$('#item_'+commonCount+'_chosen').remove();
+	});
+	$('#newCustom').click(function(){
+		$('#delCustom').before("<p id=\"customItem-"+customCount+"\"><input type=\"text\" id=\"name-"+customCount+"\" name=\"name-"+customCount+"\" placeholder=\"Item's name\" required/> <input type=\"number\" id=\"value-"+customCount+"\" name=\"value-"+customCount+"\" placeholder=\"Item's value\" min=\"0\" required/> <input type=\"number\" id=\"weight-"+customCount+"\" name=\"weight-"+customCount+"\" placeholder=\"Item's weight\" min=\"0\" step=\"0.1\" required/>");		
+		customCount++;
+	});
+	$('#delCustom').click(function(){
+		if(customCount>0)
+		customCount--;
+		$('#customItem-'+customCount).remove();
+	});
+	$('#form').submit(function(e){
+	e.preventDefault();
+		listOfItems = [];
+		for(i=0; i<commonCount; i++){
+			if($('#item-'+i).val()!=""){
+				dbind = $('#item-'+i).val();
+				var newObj={
+					"name": database[dbind].name,
+					"value": database[dbind].value,
+					"weight": database[dbind].weight};
+				listOfItems.push(newObj);
+			}
+		}
+		for(i=0; i<customCount; i++){
+			var newObj={
+				"name": $('#name-'+i).val(),
+				"value": parseInt($('#value-'+i).val()),
+				"weight": parseFloat($('#weight-'+i).val())
+				};
+			listOfItems.push(newObj);
+		}
+		arraySize = listOfItems.length;
+		hms = parseInt($('#hms').val());
+		spareLoad=parseFloat($('#weight').val());
+		HMLength=Math.min(parseInt($('#HMLength').val()), arraySize);
+		iterMax = parseInt($('#maxIter').val());
+		hmcr=parseFloat($('#hmcr').val());
+		maxTries=parseInt($('#maxTries').val());
+		for(i=0;i<HMLength;i++){
+			var emptyObj={
+				"name": "NULL",
+				"value": 0,
+				"weight": 0};
+			listOfItems.push(emptyObj);
+		}
+		console.log(listOfItems);
+		var mem = [];
+		var memValue = [];
+		var memWeight = [];
+		for(var i=0;i<hms;i++){
+			memValue.push(0);
+			memWeight.push(0);
+			var temp = [];
+			for(var j=0;j<HMLength;j++){
+				do{
+					rand = Math.floor(Math.random()*arraySize);
+				} while(jQuery.inArray(rand, temp)>=0);
+				temp.push(rand);
+				memValue[i]+=listOfItems[rand].value;
+				memWeight[i]+=listOfItems[rand].weight;
+				memWeight[i] = Math.round(memWeight[i]*100)/100;
+				if(memWeight[i]>spareLoad) {
+					memValue[i]-=listOfItems[rand].value;
+					memWeight[i]-=listOfItems[rand].weight;
+					memWeight[i] = Math.round(memWeight[i]*100)/100;
+					temp[j]=arraySize+j;
+				}
+			}
+			mem.push(temp);
+		}
+		console.log(mem);
+		console.log(memValue);
+		console.log(memWeight);
+		for(iterCount=0;iterCount<iterMax;iterCount++){
+			var temp = [];
+			var tempValue = 0;
+			var tempWeight = 0;
+			if(Math.random()<hmcr){//z pamięci
+				for(j=0;j<HMLength;j++){
+				var success = false;
+				var rand = null;
+					for(tries=0;tries<maxTries;tries++){
+						rand = mem[Math.floor(Math.random()*hms)][j];
+						if(jQuery.inArray(rand, temp)<0){
+							success = true;
+							break;
+							}
+						}
+					if(!success) do{
+						rand = Math.floor(Math.random()*arraySize);
+					} while(jQuery.inArray(rand, temp)>=0);
+					temp.push(rand);
+					tempValue+=listOfItems[rand].value;
+					tempWeight+=listOfItems[rand].weight;
+					tempWeight = Math.round(tempWeight*100)/100;
+					if(tempWeight>spareLoad) {
+						tempValue-=listOfItems[rand].value;
+						tempWeight-=listOfItems[rand].weight;
+						tempWeight = Math.round(tempWeight*100)/100;
+						temp[j]=arraySize+j;
+					}
+				}
+			} else {//z bazy danych
+				for(var j=0;j<HMLength;j++){
+				do{
+					rand = Math.floor(Math.random()*arraySize);
+				} while(jQuery.inArray(rand, temp)>=0);
+				temp.push(rand);
+				tempValue+=listOfItems[rand].value;
+				tempWeight+=listOfItems[rand].weight;tempWeight = Math.round(tempWeight*100)/100;
+					if(tempWeight>spareLoad) {
+						tempValue-=listOfItems[rand].value;
+						tempWeight-=listOfItems[rand].weight;
+						tempWeight = Math.round(tempWeight*100)/100;
+						temp[j]=arraySize+j;
+					}
+					}
+		}
+		unique=true;
+		for(i=0;i<hms;i++){
+			same = true;
+			for(j=0;j<HMLength;j++){
+			if(temp[j]!=mem[i][j]) same = false;
+			}
+			if(same) unique = false;
+		}
+		if(tempValue>0 && unique){
+			minValue = memValue[0];
+			minIndex = 0;
+				for(i=1;i<hms;i++){
+					if(memValue[i]<minValue) {
+						minValue = memValue[i];
+						minIndex = i;
+					}
+				}
+				if(tempValue>minValue){
+				/*var cons = [tempValue, minValue];
+				console.log(cons);*/
+					mem[minIndex] = temp;
+					memValue[minIndex] = tempValue;
+					memWeight[minIndex] = tempWeight;
+				}
+			}
+		}
+		bestValue = memValue[0];
+		bestIndex = 0;
+		for(i=1;i<hms;i++){
+			if(memValue[i]>bestValue) {
+				bestValue = memValue[i];
+				bestIndex = i;
+			}
+		}
+		solution=mem[bestIndex];
+		message = "Best found solution:\n";
+		for(i=0; i<HMLength; i++)
+			if(listOfItems[solution[i]].name!="NULL")
+				message+=("• "+listOfItems[solution[i]].name+"\n");
+		message+=("\nTotal value: "+memValue[bestIndex]+"\n");
+		message+=("Total weight: "+memWeight[bestIndex]);
+		window.alert(message);
+		console.log(mem);
+		console.log(memValue);
+		console.log(memWeight);
+	});
+	});</script>
+</body>
+
+</html>
